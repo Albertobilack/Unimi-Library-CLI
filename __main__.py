@@ -36,9 +36,12 @@ def list_biblio(args):
 
 # da cambiare presentazione delle informazioni : se slot["reserved"] = false scrivo a terminale prenotabile
 # se slot["reserved"] = true scrivo a terminale non prenotabile
+#DA CONTROLLARE COSA SUCCEDE SE POSTI PRENOTABILI PER UN ORARIO SONO 0, SE VENGONO MOSTRATI COMUNQUE E QUINDI VANNO NOTIFICATI COME VUOTI O VENGONO COMPLMETAMENTE
+#ESCLUSI DAL JSON
+#potrebbe essere utilizzata per mostrare le prenotazoini attive
 def freespot_biblio(args): 
     a = Easystaff()
-    a.login(args.u, args.p)
+    #a.login(args.u, args.p) #login non necessario
 
     biblioTerra, biblioPrimo = a.get_freespot()
     biblioTerra = (biblioTerra["schedule"])
@@ -57,72 +60,67 @@ def freespot_biblio(args):
         if slot["disponibili"] > 0:
             print(orario, "| presente prenotazione:", slot["reserved"])
 
+# da fare bookbiblio senza login, solo con email e cf
+# posso collegare bookbiblio con freespoto o getbiblio e controllare se orari sono prenotabili prima di tentare
+#la prenotazione
 def book_biblio(args):
-    TS_DAY = datetime.strptime(args.day, "%Y-%m-%d")
-    TS_ORAINZIO = datetime.strptime(args.inizo, "%Y-%m-%d")
-    TS_ORAFINE = datetime.strptime(args.fine, "%Y-%m-%d")
-    TS_INIZIO = TS_DAY+TS_ORAINZIO
-    TS_FINE = TS_DAY+TS_ORAFINE
 
     a = Easystaff()
-    a.login(args.u, args.p)
-    a.book_bibio(TS_INIZIO, TS_FINE)
+    #a.login(args.u, args.p)
+    a.get_book(args.day, args.start, args.end, args.floor)
+    # alternativa a.get_book(datetime.strptime(args.day, "%Y-%m-%d"), datetime.strptime(args.start, "%H:%M"), datetime.strptime(args.end, "%H:%M"), args.floor)
+
     print("ok")
-    #da definire piano, per ora preimpostato su piano terra
-    #da sistemare input per orario e giorno
+    # da definire piano, per ora preimpostato su piano terra
+    # da sistemare input per orario e giorno
 
 
 
 if __name__ == "__main__":
+
+    print(" _    _   _   _   _____   __  __   _____")
+    print("| |  | | | \\ | | |_   _| |  \\/  | |_   _|")
+    print("| |  | | |  \\| |   | |   | \\  / |   | |")
+    print("| |  | | | . ` |   | |   | |\\/| |   | |")
+    print("| |__| | | |\\  |  _| |_  | |  | |  _| |_")
+    print(" \\____/  |_| \\_| |_____| |_|  |_| |_____|\n")
+
+
     parser = argparse.ArgumentParser(
+        prog = "CLI prenotazione biblioteca",
+        description = "script per gestione posti della BICF e reservation automatica dei posti"
     )
 
-    parser.add_argument("-u", help="email", required=True) #da aggiungere default
-    parser.add_argument("-p", help="password", required=True)
+    #da sistemare metavar
+    parser.add_argument("-u", "--username", dest="u", metavar=None, help="email di istituto", required=False) #da aggiungere default
+    parser.add_argument("-p", "--password", dest="p", metavar=None, help="password di istituto", required=False)
 
     sub = parser.add_subparsers(required=True)
 
     #elenca posti biblioteca
     #todo : mostrare tutti i giorni liberi per entrambi i piani 
     #todo minore : mostrare solo determinate fasce orarie in base a quante ore prenotare?
-    biblio_l = sub.add_parser("list")
+    biblio_list = sub.add_parser("list", help="lista degli orari liberi di tutti i posti disponibili per entrambi i piani")
     #biblio_l.add_argument("-piano", help="piano da visualizzare", required=True)
-    biblio_l.set_defaults(func=list_biblio)
+    biblio_list.set_defaults(func=list_biblio)
 
-    biblio_l = sub.add_parser("book")
-    #biblio_l.add_argument("-day", help="giorno da prenotare", required=True)
-    #biblio_l.add_argument("-piano", help="piano da prenotare", required=True)
-    biblio_l.set_defaults(func=book_biblio)
+# idea:
+#nota : giorno da prenotare selezionato in base alla posizione dell'array, quindi list deve
+#listarli con relative posizioni+1
+#farei stessa cosa anche per  orario
 
-    biblio_l = sub.add_parser("freespot")
-    #biblio_l.add_argument("-day", help="giorno da visualizzare", required=True)
-    #biblio_l.add_argument("-piano", help="piano da visualizzare", required=True)
-    biblio_l.set_defaults(func=freespot_biblio)
+    biblio_book = sub.add_parser("book", help="prenotazione della fascia oraria specificata nel giorno specificato")
+    biblio_book.add_argument("-day", help="giorno da prenotare nel formato YYYY-MM-DD", required=True)
+    biblio_book.add_argument("-floor", help="piano da prenotare: ground | first", required=True, choices=["ground", "first"])
+    biblio_book.add_argument("-start", help="ora inizio prenotazione, formato H:M", required=True) # provare ad aggiungere type=datetime.strftime("%Y-%m-%d")
+    biblio_book.add_argument("-end", help="ora fine prenotazione, formato H:M", required=True)
+    biblio_book.set_defaults(func=book_biblio)
 
-
-
-
-    #nota : giorno da prenotare selezionato in base alla posizione dell'array, quindi list deve
-    #listarli con relative posizioni+1
-    #farei stessa cosa anche per orario
-    #book_l = sub.add_parser("book")
-    #book_l.add_argument("-d", help="giorno da prenotare", required=True)
-    #book_l.add_argument("-p", help="piano da prenotare (T / P)", required=True)
-    #book_l.add_argument("-h", help="orario")
-
+    biblio_freespot = sub.add_parser("freespot", help="lista delle fasce orarie prenotaibli dall'utente in un determinato timeframe (default = 1 ora), con precisazione se già prenotate")
+    #biblio_freespot.add_argument("-day", help="giorno da visualizzare", required=True)
+    #biblio_freespot.add_argument("-piano", help="piano da visualizzare", required=True)
+    biblio_freespot.set_defaults(func=freespot_biblio)
 
 
     args = parser.parse_args()
     args.func(args)
-
-
-
-
-    #list_l = sub.add_parser("list")
-    #list_l.set_defaults(func=list_lessons)
-
-    #book_l = sub.add_parser("book")
-    #book_l.add_argument("-cf", help="fiscal code", required=True)
-    #book_l.add_argument("-e", help="the id of the lesson")
-    #book_l.add_argument("-a", help="book everything available", action="store_true")
-    #book_l.set_defaults(func=book_lesson)

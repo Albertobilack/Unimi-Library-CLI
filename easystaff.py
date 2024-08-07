@@ -6,7 +6,7 @@ import config
 
 import requests
 from bs4 import BeautifulSoup as bs
-from datetime import date
+from datetime import date, datetime
 
 from exceptions import(
         EasystaffLoginForm,
@@ -20,11 +20,14 @@ FORM_URL = "https://orari-be.divsi.unimi.it/EasyAcademy/auth/auth_app.php??respo
 LOGIN_URL = "https://cas.unimi.it/login"
 EASYSTAFF_LOGIN_URL = "https://easystaff.divsi.unimi.it/PortaleStudenti/login.php?from=&from_include="
 
-#per questi 3 non serve login
+
+#per questi 4 non serve login
 BIBLIO_URL_PRIMO  = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/50/schedule/{}-{}/25/{}"  # year xxxx , month xx , timeframe xxxx es: 1 ora = timeframe(3600), timeframe potrebbe essere lasciato a 3600
 BIBLIO_URL_TERRA = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/92/schedule/{}-{}/25/{}"
+
 BIBLIO_URL_PRIMO_PERS = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/50/schedule/{}/25/{}?user_primary={}"
 BIBLIO_URL_TERRA_PERS = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/92/schedule/{}/25/{}?user_primary={}" #primo = durata, secondo = cf. posso ottenere cf da login
+
 
 BIBLIO_BOOK = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/store"
 BIBLIO_CONFERMA = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/confirm/{}"
@@ -82,7 +85,6 @@ class Easystaff:
         currentDate = date.today()
         year = currentDate.strftime("%Y") 
         month = currentDate.strftime("%m")  #PROBABILMENTE NECESSARIE AD ALTRE FUNZIONI QUINDI DA SPOSTARE IN GLOBALE
-        #print(date.today().strftime("%Y"))
 
         res = self._session.get(BIBLIO_URL_TERRA.format(year, month, config.CODICEFISCALE))
         if not res.ok:
@@ -113,10 +115,25 @@ class Easystaff:
         return pianoTerra, primoPiano
 
 
-    def book_bibio(self, TS_INIZIO: int, TS_FINE: int):
-        INPUT_PRENOTAZOINE["start_time"]=TS_INIZIO
-        INPUT_PRENOTAZOINE["end_time"]=TS_FINE
-        INPUT_PRENOTAZOINE["duarata"]=TS_FINE-TS_INIZIO
+    # def get_book(self, day:datetime, start:datetime, end:datetime, floor:str):
+    def get_book(self, day:str, start:str, end:str, floor:str):
+
+        day = datetime.strptime(day, "%Y-%m-%d")
+        day = int(day.timestamp())
+        start, half = start.split(":")
+        start = int(start)*3600
+        if half != "00" :
+            start += 1800
+        end, half = end.split(":")
+        end = int(end)*3600
+        if half != "00" :
+            end += 1800 
+        start = day+start
+        end = day+end
+
+        INPUT_PRENOTAZOINE["start_time"]=day+start
+        INPUT_PRENOTAZOINE["end_time"]=day+end
+        INPUT_PRENOTAZOINE["duarata"]=(day+start)-(day+end)
         res = self._session.post(BIBLIO_BOOK, json=INPUT_PRENOTAZOINE)
         response_json = res.json()
         id = response_json["entry"]
