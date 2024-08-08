@@ -1,5 +1,3 @@
-#tutte le exception vanno sistemate
-
 import re
 import json
 import config
@@ -13,6 +11,8 @@ from exceptions import(
         EasystaffLogin,
         EasystaffBookingPage,
         EasystaffBooking,
+        EasystaffBiblio,
+        EasystaffBiblioPersonal
 )
 
 
@@ -20,18 +20,18 @@ FORM_URL = "https://orari-be.divsi.unimi.it/EasyAcademy/auth/auth_app.php??respo
 LOGIN_URL = "https://cas.unimi.it/login"
 EASYSTAFF_LOGIN_URL = "https://easystaff.divsi.unimi.it/PortaleStudenti/login.php?from=&from_include="
 
+#date YYYY, date MM, timeframe timeframe (3600 is equal to an hour, 1800 half an hour)
+LIBRARY_URL_FIRST  = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/50/schedule/{}-{}/25/{}"
+LIBRARY_URL_GROUND = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/92/schedule/{}-{}/25/{}"
 
-#per questi 4 non serve login
-BIBLIO_URL_PRIMO  = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/50/schedule/{}-{}/25/{}"  # year xxxx , month xx , timeframe xxxx es: 1 ora = timeframe(3600), timeframe potrebbe essere lasciato a 3600
-BIBLIO_URL_TERRA = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/92/schedule/{}-{}/25/{}"
+#date YYYY-MM-DD, timeframe (3600 is equal to an hour, 1800 half an hour), cf uppercase
+LIBRARY_URL_FIRST_PERSONAL = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/50/schedule/{}/25/{}?user_primary={}"
+LIBRARY_URL_GROUND_PERSONAL = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/92/schedule/{}/25/{}?user_primary={}"
 
-BIBLIO_URL_PRIMO_PERS = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/50/schedule/{}/25/{}?user_primary={}"
-BIBLIO_URL_TERRA_PERS = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/92/schedule/{}/25/{}?user_primary={}" #primo = durata, secondo = cf. posso ottenere cf da login
+LIBRARY_BOOK = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/store"
+CONFIRM_LIBRARY_BOOKING = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/confirm/{}"
 
-
-BIBLIO_BOOK = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/store"
-BIBLIO_CONFERMA = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/confirm/{}"
-INPUT_PRENOTAZOINE = {"cliente": "biblio", "start_time": {}, "end_time": {}, "durata": {}, "entry_type": 92, "area": 25, "public_primary": config.CODICEFISCALE, "utente": {"codice_fiscale": config.CODICEFISCALE, "cognome_nome": config.COGNOMENOME, "email": config.EMAIL}, "servizio": {}, "risorsa": None, "recaptchaToken": None, "timezone": "Europe/Rome"}
+RESERVATION_INPUT = {"cliente": "biblio", "start_time": {}, "end_time": {}, "durata": {}, "entry_type": 92, "area": 25, "public_primary": config.CODICEFISCALE, "utente": {"codice_fiscale": config.CODICEFISCALE, "cognome_nome": config.COGNOMENOME, "email": config.EMAIL}, "servizio": {}, "risorsa": None, "recaptchaToken": None, "timezone": "Europe/Rome"}
 
 class Easystaff:
     def __init__(self):
@@ -62,10 +62,10 @@ class Easystaff:
         return form_data
 
 
-    def login(self, username: str, password: str):
+    def login(self):
         payload = self._get_login_form()
-        payload["username"] = username
-        payload["password"] = password
+        payload["username"] = config.EMAIL
+        payload["password"] = config.PASSWORD
 
         res = self._session.post(LOGIN_URL, data=payload)
         if not res.ok:
@@ -81,41 +81,39 @@ class Easystaff:
             raise EasystaffLogin(f"Failed on access token, responded with {res.status_code}")
 
 
-    def get_biblio(self):
+    def get_list(self):
         currentDate = date.today()
-        year = currentDate.strftime("%Y") 
-        month = currentDate.strftime("%m")  #PROBABILMENTE NECESSARIE AD ALTRE FUNZIONI QUINDI DA SPOSTARE IN GLOBALE
+        year = currentDate.strftime("%Y")
+        month = currentDate.strftime("%m")
 
-        res = self._session.get(BIBLIO_URL_TERRA.format(year, month, config.CODICEFISCALE))
+        res = self._session.get(LIBRARY_URL_GROUND.format(year, month, "3600"))
         if not res.ok:
-            raise EasystaffBookingPage(f"Failed to fetch bibio page, responded with {res.status_code}")
-        biblioTerra = json.loads(res.text)
+            raise EasystaffBiblio(f"Failed to fetch the library avaible spot, responded with {res.status_code}")
+        groundLibrary = json.loads(res.text)
 
-
-        res = self._session.get(BIBLIO_URL_PRIMO.format(year, month, config.CODICEFISCALE)) 
+        res = self._session.get(LIBRARY_URL_FIRST.format(year, month, "3600")) 
         if not res.ok:
-            raise EasystaffBookingPage(f"Failed to fetch bibio page, responded with {res.status_code}")
-        biblioPrimo = json.loads(res.text)
+            raise EasystaffBiblio(f"Failed to fetch the library avaible spot, responded with {res.status_code}")
+        firstLibrary = json.loads(res.text)
 
-        return biblioTerra, biblioPrimo
+        return groundLibrary, firstLibrary
     
 
-    def get_freespot(self):
-        res = self._session.get(BIBLIO_URL_TERRA_PERS.format(date.today(), config.TIMEFRAME, config.CODICEFISCALE))
+    def get_freespot(self, timeframe:int):
+        res = self._session.get(LIBRARY_URL_GROUND_PERSONAL.format(date.today(), str(timeframe*3600), config.CODICEFISCALE))
         if not res.ok:
-            raise EasystaffBookingPage(f"Failed to fetch freespot page, responded with {res.status_code}")
-        pianoTerra = json.loads(res.text)
+            raise EasystaffBiblioPersonal(f"Failed to fetch your library reservations page, responded with {res.status_code}")
+        groundLibrary = json.loads(res.text)
 
 
-        res = self._session.get(BIBLIO_URL_PRIMO_PERS.format(date.today(), config.TIMEFRAME, config.CODICEFISCALE))
+        res = self._session.get(LIBRARY_URL_FIRST_PERSONAL.format(date.today(), str(timeframe*3600), config.CODICEFISCALE))
         if not res.ok:
-            raise EasystaffBookingPage(f"Failed to fetch freespot page, responded with {res.status_code}")
-        primoPiano = json.loads(res.text)
+            raise EasystaffBiblioPersonal(f"Failed to fetch your library reservations page, responded with {res.status_code}")
+        firstLibrary = json.loads(res.text)
 
-        return pianoTerra, primoPiano
+        return groundLibrary, firstLibrary
 
 
-    # def get_book(self, day:datetime, start:datetime, end:datetime, floor:str):
     def get_book(self, day:str, start:str, end:str, floor:str):
 
         day = datetime.strptime(day, "%Y-%m-%d")
@@ -131,13 +129,15 @@ class Easystaff:
         start = day+start
         end = day+end
 
-        INPUT_PRENOTAZOINE["start_time"]=day+start
-        INPUT_PRENOTAZOINE["end_time"]=day+end
-        INPUT_PRENOTAZOINE["duarata"]=(day+start)-(day+end)
-        res = self._session.post(BIBLIO_BOOK, json=INPUT_PRENOTAZOINE)
+        RESERVATION_INPUT["start_time"]=day+start
+        RESERVATION_INPUT["end_time"]=day+end
+        RESERVATION_INPUT["duarata"]=(day+start)-(day+end)
+        res = self._session.post(LIBRARY_BOOK, json=RESERVATION_INPUT)
+        if not res.ok:
+            raise EasystaffBookingPage(f"Failed to reserve your spot, responded with {res.status_code}")
         response_json = res.json()
         id = response_json["entry"]
-        res = self._session.post(BIBLIO_CONFERMA.format(id))
+        res = self._session.post(CONFIRM_LIBRARY_BOOKING.format(id))
         print(res.text)
         if not res.ok:
-            raise EasystaffBooking(f"Failed to book biblio, responded with {res.status_code}")
+            raise EasystaffBooking(f"Failed to reserve your spot, responded with {res.status_code}")

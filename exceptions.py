@@ -1,4 +1,4 @@
-#tutte le exception vanno sistemate
+#peché cazzo viene usato "when" al posto di "while"?
 
 class Easystaff(Exception):
     "An exception raised when there's an easystaff related error"
@@ -16,18 +16,18 @@ class EasystaffLogin(Easystaff):
 
 
 class EasystaffBookingPage(Easystaff):
-    "An exception raised when fetching the booking page fails"
+    "An exception raised when fetching the reservation page"
     pass
 
 
 class EasystaffBooking(Easystaff):
-    "An exception raised when trying to book fails"
+    "An exception raised when confirming your reservation"
     pass
 
-class EasystaffBibioPage(Easystaff):
-    "An exception raised when fetching the biblio page fails"
+class EasystaffBiblio(Easystaff):
+    "An exception raised when fetching the libaray page"
     pass
 
-class EasystaffBibio(Easystaff):
-    "An exception raised when trying to book biblio fails"
+class EasystaffBiblioPersonal(Easystaff):
+    "An exception raised when trying to fetch your library page"
     pass

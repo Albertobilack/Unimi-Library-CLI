@@ -1,35 +1,33 @@
-#tutte le exception vanno sistemate
-
 #credit to https://github.com/Mroik for some of logic behind this script
 
 import argparse
 from easystaff import Easystaff
-from datetime import datetime
 
-#NON NECESSITA DI LOGIN
 def list_biblio(args): 
     a = Easystaff()
-    #a.login(args.u, args.p)
+    groundLibrary, firstLibrary = a.get_list()
 
-    biblioTerra, biblioPrimo = a.get_biblio()
-    biblioTerra = (biblioTerra["schedule"])
-    print("PIANO TERRA")
-    for i in biblioTerra:
-        print("giorno:", i)
-        contatore = 1
-        for j in biblioTerra[i]:
-            print(contatore, ":", j)
-            contatore += 1
-
-    if biblioPrimo["prima_disp"] == None:
-        print("0 POSTI PRENOTABILI AL PRIMO PIANO")
-    else:
-        biblioPrimo = (biblioPrimo["schedule"])
-        print("PRIMO PIANO")
-        for i in biblioPrimo:
-            print("giorno:", i)
+    if firstLibrary["prima_disp"] == None:
+        print("0 AVAIBLE SPOT AT GROUND FLOOR")
+    else:    
+        groundLibrary = (groundLibrary["schedule"])
+        print("GROUND FLOOR")
+        for i in groundLibrary:
+            print("date:", i)
             contatore = 1
-            for j in biblioPrimo[i]:
+            for j in groundLibrary[i]:
+                print(contatore, ":", j)
+                contatore += 1
+
+    if firstLibrary["prima_disp"] == None:
+        print("0 AVAIBLE SPOT AT FIRST FLOOR")
+    else:
+        firstLibrary = (firstLibrary["schedule"])
+        print("FIRST FLOOR")
+        for i in firstLibrary:
+            print("date:", i)
+            contatore = 1
+            for j in firstLibrary[i]:
                 print(contatore, ":", j)
                 contatore += 1
 
@@ -41,24 +39,22 @@ def list_biblio(args):
 #potrebbe essere utilizzata per mostrare le prenotazoini attive
 def freespot_biblio(args): 
     a = Easystaff()
-    #a.login(args.u, args.p) #login non necessario
-
-    biblioTerra, biblioPrimo = a.get_freespot()
-    biblioTerra = (biblioTerra["schedule"])
-    data = list(biblioTerra.keys())[0]
-    biblioTerra = (biblioTerra[data])
-    print("PIANO TERRA, giorno:", data)
-    for orario, slot in biblioTerra.items():
+    groundLibrary, firstLibrary = a.get_freespot(args.tf)
+    groundLibrary = (groundLibrary["schedule"])
+    data = list(groundLibrary.keys())[0]
+    groundLibrary = (groundLibrary[data])
+    print("GROUND FLOOR, date:", data)
+    for orario, slot in groundLibrary.items():
         if slot["disponibili"] > 0:
-            print(orario, "| presente prenotazione:", slot["reserved"])
+            print(orario, "| active reservation:", slot["reserved"])
 
-    biblioPrimo = (biblioPrimo["schedule"])
-    data = list(biblioPrimo.keys())[0]
-    biblioPrimo = (biblioPrimo[data])
-    print("PRIMO PIANO, giorno:", data)
-    for orario, slot in biblioPrimo.items():
+    firstLibrary = (firstLibrary["schedule"])
+    data = list(firstLibrary.keys())[0]
+    firstLibrary = (firstLibrary[data])
+    print("FIRST FLOOR, date:", data)
+    for orario, slot in firstLibrary.items():
         if slot["disponibili"] > 0:
-            print(orario, "| presente prenotazione:", slot["reserved"])
+            print(orario, "| active reservation:", slot["reserved"])
 
 # da fare bookbiblio senza login, solo con email e cf
 # posso collegare bookbiblio con freespoto o getbiblio e controllare se orari sono prenotabili prima di tentare
@@ -66,11 +62,8 @@ def freespot_biblio(args):
 def book_biblio(args):
 
     a = Easystaff()
-    #a.login(args.u, args.p)
+    a.login()
     a.get_book(args.day, args.start, args.end, args.floor)
-    # alternativa a.get_book(datetime.strptime(args.day, "%Y-%m-%d"), datetime.strptime(args.start, "%H:%M"), datetime.strptime(args.end, "%H:%M"), args.floor)
-
-    print("ok")
     # da definire piano, per ora preimpostato su piano terra
     # da sistemare input per orario e giorno
 
@@ -88,12 +81,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         prog = "CLI prenotazione biblioteca",
-        description = "script per gestione posti della BICF e reservation automatica dei posti"
+        description = "script per gestione posti della BICF e reservation automatica dei posti. Use '<command> -h' for details of an argument"
     )
-
-    #da sistemare metavar
-    parser.add_argument("-u", "--username", dest="u", metavar=None, help="email di istituto", required=False) #da aggiungere default
-    parser.add_argument("-p", "--password", dest="p", metavar=None, help="password di istituto", required=False)
 
     sub = parser.add_subparsers(required=True)
 
@@ -114,9 +103,12 @@ if __name__ == "__main__":
     biblio_book.add_argument("-floor", help="piano da prenotare: ground | first", required=True, choices=["ground", "first"])
     biblio_book.add_argument("-start", help="ora inizio prenotazione, formato H:M", required=True) # provare ad aggiungere type=datetime.strftime("%Y-%m-%d")
     biblio_book.add_argument("-end", help="ora fine prenotazione, formato H:M", required=True)
+    #biblio_book.add_argument("-u", "--username", dest="u", metavar=None, help="email di istituto", required=True) #da aggiungere default, da sistemare metavar
+    #biblio_book.add_argument("-p", "--password", dest="p", metavar=None, help="password di istituto", required=True)
     biblio_book.set_defaults(func=book_biblio)
 
-    biblio_freespot = sub.add_parser("freespot", help="lista delle fasce orarie prenotaibli dall'utente in un determinato timeframe (default = 1 ora), con precisazione se già prenotate")
+    biblio_freespot = sub.add_parser("freespot", help="lista delle fasce orarie prenotaibli in un determinato timeframe, viene precisato se già prenotate o prenotabili se indicato il CF dell'utente")
+    biblio_freespot.add_argument("-tf", help="ampiezza della fascia oraria da visualizzare in ore; default = 1 ", required=False, type=int, default=1)
     #biblio_freespot.add_argument("-day", help="giorno da visualizzare", required=True)
     #biblio_freespot.add_argument("-piano", help="piano da visualizzare", required=True)
     biblio_freespot.set_defaults(func=freespot_biblio)
