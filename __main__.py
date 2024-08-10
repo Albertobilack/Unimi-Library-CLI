@@ -3,8 +3,9 @@
 import argparse
 from easystaff import Easystaff
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
+import config
 
 def list_library(args): 
     a = Easystaff()
@@ -74,12 +75,23 @@ def wait_start():
 #la prenotazione
 def book_library(args):
 
+    if args.subArgument == "quick":
+        if args.now :                           #SICURO DI VOLER TENERE LA POSSIBILITÀ DI ESEGUIRE LO SCRIPT QUICK IN 
+            today = datetime.today()            #IN 2 GIORNI DIVERSI?
+            args.day = today.strftime("%Y-%m-%d")
+        else:
+            today = datetime.today() + timedelta(days=1)
+            args.day = today.strftime("%Y-%m-%d")        
+        args.start = config.START
+        args.end = config.END
+        args.floor = config.FLOOR
+
     if not args.now :
         wait_start()
 
     a = Easystaff()
     a.login()
-    a.get_book(args.day, args.start, args.end, args.floor, args.now)
+    a.get_book(args.day, args.start, args.end, args.floor)
     # da definire piano, per ora preimpostato su piano terra
     # da sistemare input per orario e giorno
 
@@ -100,7 +112,7 @@ if __name__ == "__main__":
         description = "script per gestione posti della BICF e reservation automatica dei posti. Use '<command> -h' for details of an argument"
     )
 
-    sub = parser.add_subparsers(required=True)
+    sub = parser.add_subparsers(required=True, dest = "subArgument")
 
     #elenca posti biblioteca
     #todo : mostrare tutti i giorni liberi per entrambi i piani 
@@ -130,6 +142,10 @@ if __name__ == "__main__":
     #biblio_freespot.add_argument("-piano", help="piano da visualizzare", required=True)
     freespot.set_defaults(func=freespot_library)
 
+
+    quick = sub.add_parser("quick", help="book a spot with default settings from config file")
+    quick.add_argument("-now", help="reserve your spot instantly instead of waiting until midnight", action=argparse.BooleanOptionalAction)
+    quick.set_defaults(func=book_library)
 
     args = parser.parse_args()
     args.func(args)

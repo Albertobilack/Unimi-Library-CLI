@@ -31,7 +31,7 @@ LIBRARY_URL_GROUND_PERSONAL = "https://prenotabiblio.sba.unimi.it/portalePlannin
 LIBRARY_BOOK = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/store"
 CONFIRM_LIBRARY_BOOKING = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/confirm/{}"
 
-RESERVATION_INPUT = {"cliente": "biblio", "start_time": {}, "end_time": {}, "durata": {}, "entry_type": 92, "area": 25, "public_primary": config.CODICEFISCALE, "utente": {"codice_fiscale": config.CODICEFISCALE, "cognome_nome": config.COGNOMENOME, "email": config.EMAIL}, "servizio": {}, "risorsa": None, "recaptchaToken": None, "timezone": "Europe/Rome"}
+RESERVATION_INPUT = {"cliente": "biblio", "start_time": {}, "end_time": {}, "durata": {}, "entry_type": 92, "area": 25, "public_primary": config.CODICEFISCALE, "utente": {"codice_fiscale": config.CODICEFISCALE, "cognome_nome": config.SURNAMENAME, "email": config.EMAIL}, "servizio": {}, "risorsa": None, "recaptchaToken": None, "timezone": "Europe/Rome"}
 
 class Easystaff:
     def __init__(self):
