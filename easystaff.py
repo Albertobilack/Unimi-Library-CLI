@@ -31,7 +31,7 @@ LIBRARY_URL_GROUND_PERSONAL = "https://prenotabiblio.sba.unimi.it/portalePlannin
 LIBRARY_BOOK = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/store"
 CONFIRM_LIBRARY_BOOKING = "https://prenotabiblio.sba.unimi.it/portalePlanningAPI/api/entry/confirm/{}"
 
-RESERVATION_INPUT = {"cliente": "biblio", "start_time": {}, "end_time": {}, "durata": {}, "entry_type": 92, "area": 25, "public_primary": config.CODICEFISCALE, "utente": {"codice_fiscale": config.CODICEFISCALE, "cognome_nome": config.SURNAMENAME, "email": config.EMAIL}, "servizio": {}, "risorsa": None, "recaptchaToken": None, "timezone": "Europe/Rome"}
+RESERVATION_INPUT = {"cliente": "biblio", "start_time": {}, "end_time": {}, "durata": {}, "entry_type": {}, "area": 25, "public_primary": config.CODICEFISCALE, "utente": {"codice_fiscale": config.CODICEFISCALE, "cognome_nome": config.SURNAMENAME, "email": config.EMAIL}, "servizio": {}, "risorsa": None, "recaptchaToken": None, "timezone": "Europe/Rome"}
 
 class Easystaff:
     def __init__(self):
@@ -132,6 +132,14 @@ class Easystaff:
         RESERVATION_INPUT["start_time"]=day+start
         RESERVATION_INPUT["end_time"]=day+end
         RESERVATION_INPUT["duarata"]=(day+start)-(day+end)
+
+        if floor == "ground":
+            RESERVATION_INPUT["entry_type"] = 92
+        elif floor == "first":
+            RESERVATION_INPUT["entry_type"] = 50
+        else:
+            print("invalid floor, valid input are: ground | first" )
+
         res = self._session.post(LIBRARY_BOOK, json=RESERVATION_INPUT)
         if not res.ok:
             raise EasystaffBookingPage(f"Failed to reserve your spot, responded with {res.status_code}")

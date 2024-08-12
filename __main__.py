@@ -70,9 +70,6 @@ def wait_start():
         sleep(30)
 
 
-# da fare bookbiblio senza login, solo con email e cf
-# posso collegare bookbiblio con freespoto o getbiblio e controllare se orari sono prenotabili prima di tentare
-#la prenotazione
 def book_library(args):
 
     if args.subArgument == "quick":
@@ -92,13 +89,9 @@ def book_library(args):
     a = Easystaff()
     a.login()
     a.get_book(args.day, args.start, args.end, args.floor)
-    # da definire piano, per ora preimpostato su piano terra
-    # da sistemare input per orario e giorno
 
 
-
-if __name__ == "__main__":
-
+def print_logo() :
     print(" _    _   _   _   _____   __  __   _____")
     print("| |  | | | \\ | | |_   _| |  \\/  | |_   _|")
     print("| |  | | |  \\| |   | |   | \\  / |   | |")
@@ -107,44 +100,40 @@ if __name__ == "__main__":
     print(" \\____/  |_| \\_| |_____| |_|  |_| |_____|\n")
 
 
+if __name__ == "__main__":
+
+    print_logo()
+
     parser = argparse.ArgumentParser(
-        prog = "CLI prenotazione biblioteca",
-        description = "script per gestione posti della BICF e reservation automatica dei posti. Use '<command> -h' for details of an argument"
+        #prog = "Unimi library Reservation script",
+        description = "Script for handling reservations at the BICF Library. Use '<command> -h' for details of an argument"
     )
 
     sub = parser.add_subparsers(required=True, dest = "subArgument")
 
-    #elenca posti biblioteca
-    #todo : mostrare tutti i giorni liberi per entrambi i piani 
-    #todo minore : mostrare solo determinate fasce orarie in base a quante ore prenotare?
-    list = sub.add_parser("list", help="lista degli orari liberi di tutti i posti disponibili per entrambi i piani")
+    list = sub.add_parser("list", help="list of current reservable time slots on both floors")
     #biblio_l.add_argument("-piano", help="piano da visualizzare", required=True)
     list.set_defaults(func=list_library)
 
-# idea:
-#nota : giorno da prenotare selezionato in base alla posizione dell'array, quindi list deve
-#listarli con relative posizioni+1
-#farei stessa cosa anche per  orario
-
-    book = sub.add_parser("book", help="prenotazione della fascia oraria specificata nel giorno specificato")
-    book.add_argument("-day", help="giorno da prenotare nel formato YYYY-MM-DD", required=True)
-    book.add_argument("-floor", help="piano da prenotare: ground | first", required=True, choices=["ground", "first"])
-    book.add_argument("-start", help="ora inizio prenotazione, formato H:M", required=True) # provare ad aggiungere type=datetime.strftime("%Y-%m-%d")
-    book.add_argument("-end", help="ora fine prenotazione, formato H:M", required=True)
-    book.add_argument("-now", help="reserve your spot instantly instead of waiting until midnight", action=argparse.BooleanOptionalAction)
+    book = sub.add_parser("book", help="reservation of the specified time slot on the chosen day")
+    book.add_argument("-day",  metavar ="", help="format YYYY-MM-DD", required=True)
+    book.add_argument("-floor", metavar ="", help="supported inputs are: ground | first", required=True, choices=["ground", "first"])
+    book.add_argument("-start", metavar ="", help="reservation's start time, 24-hour format HH:MM", required=True) # provare ad aggiungere type=datetime.strftime("%Y-%m-%d")
+    book.add_argument("-end", metavar= "", help="reservation's end time, 24-hour format HH:MM", required=True)
+    book.add_argument("-now", metavar= "", help="reserve your spot instantly rather than waiting until midnight", action=argparse.BooleanOptionalAction)
     #biblio_book.add_argument("-u", "--username", dest="u", metavar=None, help="email di istituto", required=True) #da aggiungere default, da sistemare metavar
     #biblio_book.add_argument("-p", "--password", dest="p", metavar=None, help="password di istituto", required=True)
     book.set_defaults(func=book_library)
 
-    freespot = sub.add_parser("freespot", help="lista delle fasce orarie prenotaibli in un determinato timeframe, viene precisato se già prenotate o prenotabili se indicato il CF dell'utente")
-    freespot.add_argument("-tf", help="ampiezza della fascia oraria da visualizzare in ore; default = 1 ", required=False, type=int, default=1)
+    freespot = sub.add_parser("freespot", help="list of reservable time slots within a given timeframe on both floors; output also indicates whether the slots are already booked by the user")
+    freespot.add_argument("-tf", metavar= "", help="input must be an integers representing the timeframe in hours, deafult is '1')", required=False, type=int, default=1)
     #biblio_freespot.add_argument("-day", help="giorno da visualizzare", required=True)
     #biblio_freespot.add_argument("-piano", help="piano da visualizzare", required=True)
     freespot.set_defaults(func=freespot_library)
 
 
-    quick = sub.add_parser("quick", help="book a spot with default settings from config file")
-    quick.add_argument("-now", help="reserve your spot instantly instead of waiting until midnight", action=argparse.BooleanOptionalAction)
+    quick = sub.add_parser("quick", help="reserve your spot with default settings from config file")
+    quick.add_argument("-now", help="reserve your spot instantly rather than waiting until midnight", action=argparse.BooleanOptionalAction)
     quick.set_defaults(func=book_library)
 
     args = parser.parse_args()
