@@ -4,7 +4,7 @@ import config
 
 import requests
 from bs4 import BeautifulSoup as bs
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from exceptions import(
         EasystaffLoginForm,
@@ -98,22 +98,52 @@ class Easystaff:
 
         return groundLibrary, firstLibrary
     
-
+#res if no avabile spot :{'schedule': {"YYYY-MM-DD": {}}}
+#res if day is not avaible : {'schedule': []}
     def get_freespot(self, timeframe:int):
-        res = self._session.get(LIBRARY_URL_GROUND_PERSONAL.format(date.today(), str(timeframe*3600), config.CODICEFISCALE))
+        
+        dayOne = date.today()
+        dayTwo = dayOne + timedelta(days=1)
+        dayThree = dayOne + timedelta(days=2)
+        groundLibrary = {"schedule": {}}
+
+        res = self._session.get(LIBRARY_URL_GROUND_PERSONAL.format(dayOne, str(timeframe*3600), config.CODICEFISCALE))
         if not res.ok:
             raise EasystaffBiblioPersonal(f"Failed to fetch your library reservations page, responded with {res.status_code}")
-        groundLibrary = json.loads(res.text)
+        firstDay = json.loads(res.text)
+        if str(dayOne) in firstDay["schedule"]:
+            groundLibrary["schedule"][str(dayOne)] = firstDay["schedule"][str(dayOne)]
+        # else:
+        #     groundLibrary["schedule"][str(dayOne)] = {}
 
-
-        res = self._session.get(LIBRARY_URL_FIRST_PERSONAL.format(date.today(), str(timeframe*3600), config.CODICEFISCALE))
+        res = self._session.get(LIBRARY_URL_FIRST_PERSONAL.format(dayOne, str(timeframe*3600), config.CODICEFISCALE))
         if not res.ok:
             raise EasystaffBiblioPersonal(f"Failed to fetch your library reservations page, responded with {res.status_code}")
         firstLibrary = json.loads(res.text)
 
+        res = self._session.get(LIBRARY_URL_GROUND_PERSONAL.format(dayTwo, str(timeframe*3600), config.CODICEFISCALE))
+        if not res.ok:
+            raise EasystaffBiblioPersonal(f"Failed to fetch your library reservations page, responded with {res.status_code}")
+        secondDay = json.loads(res.text)
+        if str(dayTwo) in secondDay["schedule"]:
+            groundLibrary["schedule"][str(dayTwo)] = secondDay["schedule"][str(dayTwo)]
+        # else:
+        #     groundLibrary["schedule"][str(dayThree)] = {}
+
+        res = self._session.get(LIBRARY_URL_GROUND_PERSONAL.format(dayThree, str(timeframe*3600), config.CODICEFISCALE))
+        if not res.ok:
+            raise EasystaffBiblioPersonal(f"Failed to fetch your library reservations page, responded with {res.status_code}")
+        thirdDay = json.loads(res.text)
+        if str(dayThree) in thirdDay["schedule"]:
+            groundLibrary["schedule"][str(dayThree)] = thirdDay["schedule"][str(dayThree)]
+        # else:
+        #     groundLibrary["schedule"][str(dayThree)] = {}
+
+
         return groundLibrary, firstLibrary
 
 
+    #DO NOT USE DATE INSTEAD OF DAY
     def get_book(self, day:str, start:str, end:str, floor:str):
 
         day = datetime.strptime(day, "%Y-%m-%d")
@@ -125,20 +155,18 @@ class Easystaff:
         end, half = end.split(":")
         end = int(end)*3600
         if half != "00" :
-            end += 1800 
-        start = day+start
-        end = day+end
+            end += 1800
 
         RESERVATION_INPUT["start_time"]=day+start
         RESERVATION_INPUT["end_time"]=day+end
-        RESERVATION_INPUT["duarata"]=(day+start)-(day+end)
+        RESERVATION_INPUT["durata"]=end-start
 
         if floor == "ground":
             RESERVATION_INPUT["entry_type"] = 92
         elif floor == "first":
             RESERVATION_INPUT["entry_type"] = 50
-        else:
-            print("invalid floor, valid input are: ground | first" )
+        # else:
+        #     print("invalid floor, valid input are: ground | first" )
 
         res = self._session.post(LIBRARY_BOOK, json=RESERVATION_INPUT)
         if not res.ok:

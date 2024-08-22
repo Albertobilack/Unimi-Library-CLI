@@ -1,9 +1,7 @@
-#credit to https://github.com/Mroik for some of logic behind this script
-
 import argparse
 from easystaff import Easystaff
 from time import sleep
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pytz
 import config
 
@@ -11,7 +9,7 @@ def list_library(args):
     a = Easystaff()
     groundLibrary, firstLibrary = a.get_list()
 
-    if firstLibrary["prima_disp"] == None:
+    if groundLibrary["prima_disp"] == None:
         print("0 AVAILABLE SPOT AT GROUND FLOOR")
     else:    
         groundLibrary = (groundLibrary["schedule"])
@@ -23,7 +21,7 @@ def list_library(args):
             for j in groundLibrary[i]:
                 if j not in alreadyListed:
                     alreadyListed.append(j)
-                    print(iteration + ":", j)
+                    print(iteration , ":", j)
                     iteration += 1
 
     if firstLibrary["prima_disp"] == None:
@@ -38,36 +36,52 @@ def list_library(args):
             for j in firstLibrary[i]:
                 if j not in alreadyListed:
                     alreadyListed.append(j)
-                    print(iteration + ":" + j)
+                    print(iteration,  ":" + j)
                     iteration += 1
 
-
+# DO NOT USE DATE INSTEAD OF DAY
 def freespot_library(args): 
     a = Easystaff()
     groundLibrary, firstLibrary = a.get_freespot(args.tf)
-    groundLibrary = (groundLibrary["schedule"])
-    data = list(groundLibrary.keys())[0]
-    groundLibrary = (groundLibrary[data])
-    print("GROUND FLOOR, date:", data)
-    for orario, slot in groundLibrary.items():
-        if slot["disponibili"] > 0:
-            print(orario, "| active reservation:", slot["reserved"])
 
-    firstLibrary = (firstLibrary["schedule"])
-    data = list(firstLibrary.keys())[0]
-    firstLibrary = (firstLibrary[data])
-    print("FIRST FLOOR, date:", data)
-    for orario, slot in firstLibrary.items():
-        if slot["disponibili"] > 0:
-            print(orario, "| active reservation:", slot["reserved"])
+    if groundLibrary["schedule"] == {}:
+        print("0 AVAILABLE SPOT AT FIRST FLOOR")
+    else: 
+        print("GROUND FLOOR")
+        for day in groundLibrary["schedule"]:
+            print("date:", day)
+            day = groundLibrary["schedule"][day]
+            #if day == {}:
+            #    print("0 POSTI DISPONIBILI")
+            for timeslot, reservation in day.items():
+                if reservation["disponibili"] > 0:
+                    print(timeslot, "| active reservation:", reservation["reserved"])
+
+    day = str(date.today())
+    if firstLibrary["schedule"] == [] or firstLibrary["schedule"][day] == {}:
+        print("\n0 AVAILABLE SPOT AT FIRST FLOOR")
+    else:
+        firstLibrary = (firstLibrary["schedule"][day])
+        print("\nFIRST FLOOR\ndate:", day)
+        # if firstLibrary == {}:
+        #     print("0 POSTI DISPONIBILI")
+        for timeslot, reservation in firstLibrary.items():
+            if reservation["disponibili"] > 0:
+                print(timeslot, "| active reservation:", reservation["reserved"])
 
 
 def wait_start():
-    startTime = "00:10"
+    startTime = "00:05"
     startTime = datetime.strptime(startTime, "%H:%M").time()
+    limitTime = "00:00"
+    limitTime = datetime.strptime(limitTime, "%H:%M").time()
     cet = pytz.timezone("CET")
+
+    while limitTime < datetime.now(cet).time():
+        sleep(120)
+
     while startTime > datetime.now(cet).time():
-        sleep(30)
+        sleep(15)
 
 
 def book_library(args):
@@ -115,18 +129,18 @@ if __name__ == "__main__":
     #biblio_l.add_argument("-piano", help="piano da visualizzare", required=True)
     list.set_defaults(func=list_library)
 
-    book = sub.add_parser("book", help="reservation of the specified time slot on the chosen day")
-    book.add_argument("-day",  metavar ="", help="format YYYY-MM-DD", required=True)
-    book.add_argument("-floor", metavar ="", help="supported inputs are: ground | first", required=True, choices=["ground", "first"])
-    book.add_argument("-start", metavar ="", help="reservation's start time, 24-hour format HH:MM", required=True) # provare ad aggiungere type=datetime.strftime("%Y-%m-%d")
-    book.add_argument("-end", metavar= "", help="reservation's end time, 24-hour format HH:MM", required=True)
-    book.add_argument("-now", metavar= "", help="reserve your spot instantly rather than waiting until midnight", action=argparse.BooleanOptionalAction)
+    book = sub.add_parser("book", help="reservation of the specified time slot on the chosen date")
+    book.add_argument("-date", dest = "day", metavar = "YYYY-MM-DD", help="date of the reservation", required=True)
+    book.add_argument("-floor", help="target floor", required=True, choices=["ground", "first"])
+    book.add_argument("-start", metavar ="HH:MM" , help="reservation's start time, 24-hour format", required=True) # provare ad aggiungere type=datetime.strftime("%Y-%m-%d")
+    book.add_argument("-end", metavar = "HH:MM", help="reservation's end time, 24-hour format", required=True)
+    book.add_argument("-now", help="reserve your spot instantly rather than waiting until midnight", action=argparse.BooleanOptionalAction)
     #biblio_book.add_argument("-u", "--username", dest="u", metavar=None, help="email di istituto", required=True) #da aggiungere default, da sistemare metavar
     #biblio_book.add_argument("-p", "--password", dest="p", metavar=None, help="password di istituto", required=True)
     book.set_defaults(func=book_library)
 
     freespot = sub.add_parser("freespot", help="list of reservable time slots within a given timeframe on both floors; output also indicates whether the slots are already booked by the user")
-    freespot.add_argument("-tf", metavar= "", help="input must be an integers representing the timeframe in hours, deafult is '1')", required=False, type=int, default=1)
+    freespot.add_argument("-tf", metavar = "TIMEFRAME", help="input must be an integer representing the timeframe in hours (deafult is '1')", required=False, type=int, default=1)
     #biblio_freespot.add_argument("-day", help="giorno da visualizzare", required=True)
     #biblio_freespot.add_argument("-piano", help="piano da visualizzare", required=True)
     freespot.set_defaults(func=freespot_library)
