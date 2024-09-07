@@ -105,6 +105,14 @@ class Easystaff:
         dayOne = date.today()
         dayTwo = dayOne + timedelta(days=1)
         dayThree = dayOne + timedelta(days=2)
+        dayFour = dayOne + timedelta(days=3)
+
+        # dayOne = date.today()
+        # addOneDay = timedelta(days=1)
+        # dayTwo = dayOne + addOneDay
+        # dayThree = dayTwo + addOneDay
+        # dayFour = dayThree + addOneDay
+
         groundLibrary = {"schedule": {}}
 
         res = self._session.get(LIBRARY_URL_GROUND_PERSONAL.format(dayOne, str(timeframe*3600), config.CODICEFISCALE))
@@ -139,6 +147,14 @@ class Easystaff:
         # else:
         #     groundLibrary["schedule"][str(dayThree)] = {}
 
+        res = self._session.get(LIBRARY_URL_GROUND_PERSONAL.format(dayFour, str(timeframe*3600), config.CODICEFISCALE))
+        if not res.ok:
+            raise EasystaffBiblioPersonal(f"Failed to fetch your library reservations page, responded with {res.status_code}")
+        fourthDay = json.loads(res.text)
+        if str(dayFour) in fourthDay["schedule"]:
+            groundLibrary["schedule"][str(dayFour)] = fourthDay["schedule"][str(dayFour)]
+        # else:
+        #     groundLibrary["schedule"][str(dayFour)] = {}
 
         return groundLibrary, firstLibrary
 
@@ -150,11 +166,11 @@ class Easystaff:
         day = int(day.timestamp())
         start, half = start.split(":")
         start = int(start)*3600
-        if half != "00" :
+        if half == "30" :
             start += 1800
         end, half = end.split(":")
         end = int(end)*3600
-        if half != "00" :
+        if half == "30" :
             end += 1800
 
         RESERVATION_INPUT["start_time"]=day+start
@@ -174,6 +190,7 @@ class Easystaff:
         response_json = res.json()
         id = response_json["entry"]
         res = self._session.post(CONFIRM_LIBRARY_BOOKING.format(id))
-        print(res.text)
         if not res.ok:
             raise EasystaffBooking(f"Failed to reserve your spot, responded with {res.status_code}")
+        reservationStatus = json.loads(res.text)
+        return reservationStatus

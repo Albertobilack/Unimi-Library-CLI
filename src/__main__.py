@@ -16,19 +16,17 @@ def list_library(args):
         print("GROUND FLOOR")
         for i in groundLibrary:
             print("date:", i)
-            iteration = 1
             alreadyListed = []
             for j in groundLibrary[i]:
                 if j not in alreadyListed:
                     alreadyListed.append(j)
-                    print(iteration , ":", j)
-                    iteration += 1
+                    print("-", j)
 
     if firstLibrary["prima_disp"] == None:
-        print("0 AVAILABLE SPOT AT FIRST FLOOR")
+        print("\n0 AVAILABLE SPOT AT FIRST FLOOR")
     else:
         firstLibrary = (firstLibrary["schedule"])
-        print("FIRST FLOOR")
+        print("\nFIRST FLOOR")
         for i in firstLibrary:
             print("date:", i)
             iteration = 1
@@ -55,7 +53,7 @@ def freespot_library(args):
             #    print("0 POSTI DISPONIBILI")
             for timeslot, reservation in day.items():
                 if reservation["disponibili"] > 0:
-                    print(timeslot, "| active reservation:", reservation["reserved"])
+                    print("-", timeslot, "| active reservation:", reservation["reserved"])
 
     day = str(date.today())
     if firstLibrary["schedule"] == [] or firstLibrary["schedule"][day] == {}:
@@ -102,7 +100,11 @@ def book_library(args):
 
     a = Easystaff()
     a.login()
-    a.get_book(args.day, args.start, args.end, args.floor)
+    reservationStatus = a.get_book(args.day, args.start, args.end, args.floor)
+    if reservationStatus["message"] == "Prenotazione confermata":
+        print("Reservation confirmed on", str(args.day), "starting at", str(args.start), "ending at", str(args.end))
+    else:
+        print(reservationStatus["message"])
 
 
 def print_logo() :
