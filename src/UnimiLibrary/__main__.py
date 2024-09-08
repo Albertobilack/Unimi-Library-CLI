@@ -1,9 +1,9 @@
 import argparse
-from easystaff import Easystaff
+from UnimiLibrary.easystaff import Easystaff
 from time import sleep
 from datetime import datetime, timedelta, date
 import pytz
-import config
+import UnimiLibrary.config as config
 
 def list_library(args): 
     a = Easystaff()

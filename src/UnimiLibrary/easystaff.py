@@ -1,18 +1,17 @@
-import re
 import json
-import config
+import UnimiLibrary.config as config
 
 import requests
 from bs4 import BeautifulSoup as bs
 from datetime import date, datetime, timedelta
 
-from exceptions import(
+from UnimiLibrary.exceptions import(
         EasystaffLoginForm,
         EasystaffLogin,
         EasystaffBookingPage,
         EasystaffBooking,
         EasystaffBiblio,
-        EasystaffBiblioPersonal
+        EasystaffBiblioPersonal,
 )
 
 
