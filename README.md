@@ -2,7 +2,7 @@
 
 Simple CLI script to reserve spots at University of Milan (UNIMI) Library
 
-![Static Badge](https://img.shields.io/badge/semver-1.0.0-blue)
+![Static Badge](https://img.shields.io/badge/semver-1.0.1-blue)
 ## Installation
 
 Install Unimi-Library-CLI with pip
@@ -25,14 +25,14 @@ By deafult, `pip` will install the latest version of dependencies. However, the 
 ## Example
 
 ```bash
-pip -m UnimiLibrary book -date 2024-09-23 -floor ground -start 13:00 -end 21:00
+python -m UnimiLibrary book -date 2024-09-23 -floor ground -start 13:00 -end 21:00
 ```
 ## Configuration
 
 Before using the package, you need to configure the values in the config file by running
 
 ```bash
-pip -m UnimiLibrary config -name NAME -email EMAIL -password PASSWORD -cf CODICEFISCALE -start HH:MM -end HH:MM -floor [{ground, first}]
+python -m UnimiLibrary config -name NAME -email EMAIL -password PASSWORD -cf CODICEFISCALE -start HH:MM -end HH:MM -floor [{ground, first}]
 ```
 
 | Argument | Value         | Info/Format       | Example       |
@@ -52,7 +52,7 @@ Please note that all values must be properly configured for the package to funct
 For more in-depth usage instructions, please refer to the built-in manual by accessing the help message within the package using
 
 ```bash
-pip -m UnimiLibrary [book | list | freespot | quick | config] -h
+python -m UnimiLibrary [book | list | freespot | quick | config] -h
 ```
 
 ## Roadmap
