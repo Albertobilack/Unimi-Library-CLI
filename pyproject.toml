@@ -7,7 +7,7 @@ packages= ["src/UnimiLibrary"]
 
 [project]
 name = "Unimi-Library-CLI"
-version = "1.0.1"
+version = "1.1.0"
 authors = [
   { name="Albertobilack", email="" },
 ]

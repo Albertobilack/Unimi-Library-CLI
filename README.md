@@ -2,7 +2,7 @@
 
 Simple CLI script to reserve spots at University of Milan (UNIMI) Library
 
-![Static Badge](https://img.shields.io/badge/semver-1.0.1-blue)
+![Static Badge](https://img.shields.io/badge/semver-1.1.0-blue)
 ## Installation
 
 Install Unimi-Library-CLI with pip

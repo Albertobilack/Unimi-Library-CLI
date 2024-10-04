@@ -6,17 +6,14 @@ from os.path import abspath
 from UnimiLibrary.easystaff import Easystaff
 
 def wait_start():
-    startTime = "00:05"
+    startTime = "07:05"
     startTime = datetime.strptime(startTime, "%H:%M").time()
-    limitTime = "00:00"
+    limitTime = "06:55"
     limitTime = datetime.strptime(limitTime, "%H:%M").time()
     cet = pytz.timezone("CET")
 
-    while limitTime < datetime.now(cet).time():
+    while not (limitTime <= datetime.now(cet).time() <= startTime):
         sleep(120)
-
-    while startTime > datetime.now(cet).time():
-        sleep(15)
 
 
 def setupConfigFile(args):
