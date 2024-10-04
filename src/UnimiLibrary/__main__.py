@@ -1,9 +1,9 @@
-import argparse
-from UnimiLibrary.easystaff import Easystaff
+import argparse, pytz, json, os
 from time import sleep
 from datetime import datetime, date
-import pytz
-import json
+from inspect import getsourcefile
+from os.path import abspath
+from UnimiLibrary.easystaff import Easystaff
 
 def wait_start():
     startTime = "00:05"
@@ -20,8 +20,20 @@ def wait_start():
 
 
 def setupConfigFile(args):
+
+    # for loc in os.curdir, os.path.expanduser("~"), "/etc/UnimiLibrary", os.environ.get("UnimiLibrary_CONF"):  
+    #     try:
+    #         with open(os.path.join(loc,'config.json'), 'r') as config_file:
+    #             data = json.load(config_file)
+    #             if data:
+    #                 break
+    #     except FileNotFoundError:
+    #         data = {}
+
+    dir_path = abspath(getsourcefile(lambda:0)).removesuffix(os.path.basename(__file__))
+    dir_path = os.path.join(dir_path,'config.json')
     try:
-        with open('config.json', 'r') as config_file:
+        with open(dir_path, 'r') as config_file:
             data = json.load(config_file)
     except FileNotFoundError:
         data = {}
@@ -56,7 +68,7 @@ def setupConfigFile(args):
     # if args.floor:
     #     data["FLOOR"] = args.floor
 
-    with open('config.json', 'w') as config_file:
+    with open(dir_path, 'w') as config_file:
         json.dump(data, config_file, indent=4)
 
 

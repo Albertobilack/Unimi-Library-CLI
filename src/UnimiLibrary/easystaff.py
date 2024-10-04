@@ -1,7 +1,8 @@
-import json
-import requests
+import json, requests, os, sys
 from bs4 import BeautifulSoup as bs
 from datetime import date, datetime, timedelta
+from inspect import getsourcefile
+from os.path import abspath
 
 from UnimiLibrary.exceptions import(
         EasystaffLoginForm,
@@ -33,8 +34,15 @@ RESERVATION_INPUT = {"cliente": "biblio", "start_time": {}, "end_time": {}, "dur
 
 def readConfig(valuesRequested):
     
-    file = open('config.json')
-    data = json.load(file)
+    #dir_path = os.path.abspath(os.path.dirname(sys.argv[0]))
+    #dir_path = os.path.abspath(os.path.dirname(__file__))
+    dir_path = abspath(getsourcefile(lambda:0)).removesuffix(os.path.basename(__file__))
+    try:
+        with open(os.path.join(dir_path,'config.json'), 'r') as config_file:
+            data = json.load(config_file)
+    except FileNotFoundError:
+        print("please setup config file running python -m UnimiLibrary config")
+        sys.exit(0)
 
     if type(valuesRequested) == str:
         return data[valuesRequested]
